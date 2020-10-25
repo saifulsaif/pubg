@@ -42,21 +42,31 @@ public function login()
  *
  * @return \Illuminate\Http\JsonResponse
  */
-public function me()
-{
+public function me(){
     return response()->json(auth()->user());
 }
-public function profile(Request $request)
-{
-   $info=auth()->user();
-   $user_id=$request->input('user_id');
-   $profile_info = DB::table('profiles')
-                  ->where('user_id',$user_id)
-                  ->get();
-    return response()->json($profile_info);
+public function profile(Request $request){
+  $info=auth()->user();
+ $user_id=$request->get('user_id');
+ $profile_info = DB::table('users')
+                ->where('id',$user_id)
+                ->select('id','name','email as phone','phone as email','image','role','app_id')
+                ->first();
+  return response()->json($profile_info);
 }
-public function contact(Request $request)
-{
+public function profileUpdate(Request $request){
+ $user_id=$request->get('user_id');
+ $name=$request->get('name');
+ $email=$request->get('email');
+ $phone=$request->get('phone');
+ DB::table('users')
+            ->where('id', $user_id)
+            ->update(['name' => $name,'email' => $email,'phone' => $phone]);
+  $data['success'] = 1;
+  $data['message'] = "Profile Update Successfully!";
+  return $data;
+}
+public function contact(Request $request){
    $user_id=$request->input('type');
   if($user_id=='user'){
      $contact_info = DB::table('users')
@@ -70,6 +80,58 @@ public function contact(Request $request)
     return response()->json($contact_info);
   }
 }
+
+public function send(Request $request){
+  $message="it's work";
+  $fields = array(
+           'to' => $request->get('reg_id'),
+           'data' => $data = array('message' => 'hello' ),
+       );
+
+       return $this->sendPushNotification($fields);
+}
+private function sendPushNotification($fields) {
+
+       //firebase server url to send the curl request
+       $url = 'https://fcm.googleapis.com/fcm/send';
+
+       //building headers for the request
+       $headers = array(
+           'Authorization: key=AAAAq-0EXCU:APA91bEOrpi96-MqymxVqfxgB-AcVa-WN1JumGgV2SzC-vMfUW3u8AP1QR2bW1T0nWXhh7A7KCCOg_-OcInIaXDIA1318aK_qN_9TTSfUl6UgQOTmsRNFUhOvKV5JDERTgi4a6saqy_8',
+           'Content-Type: application/json'
+       );
+
+       //Initializing curl to open a connection
+       $ch = curl_init();
+
+       //Setting the curl url
+       curl_setopt($ch, CURLOPT_URL, $url);
+
+       //setting the method as post
+       curl_setopt($ch, CURLOPT_POST, true);
+
+       //adding headers
+       curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+       //disabling ssl support
+       curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+       //adding the fields in json format
+       curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+
+       //finally executing the curl request
+       $result = curl_exec($ch);
+       if ($result === FALSE) {
+           die('Curl failed: ' . curl_error($ch));
+       }
+
+       //Now close the connection
+       curl_close($ch);
+
+       //and return the result
+       return $result;
+   }
 
 /**
  * Log the user out (Invalidate the token).

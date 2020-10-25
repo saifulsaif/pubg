@@ -20,7 +20,7 @@ class HomeController extends Controller
   }
   public function registration(Request $request)
   {
-    $img={{asset('/images/user/user.jpg')}}
+    $img=asset('/images/user/user.jpg');
      $user = new User;
      $user->name=$request->input('user_name');
      $user->email=$request->input('phone');

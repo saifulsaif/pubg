@@ -13,6 +13,8 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('refresh', 'AuthController@refresh');
     Route::post('me', 'AuthController@me');
     Route::post('profile', 'AuthController@profile');
+    Route::post('profile-update', 'AuthController@profileUpdate');
     Route::post('contact', 'AuthController@contact');
+    Route::post('send', 'AuthController@send');
 
 });
