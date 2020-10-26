@@ -20,5 +20,6 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('message_list', 'AuthController@messageList');
     Route::post('active_users', 'AuthController@activeUsers');
     Route::post('get-messages', 'AuthController@getMessage');
+    Route::post('send-messages', 'AuthController@sendMessage');
 
 });

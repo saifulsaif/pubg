@@ -55,15 +55,18 @@ public function activeUsers(Request $request){
    $app_id=$request->input('app_id');
    $active_users = DB::table('users')
                   ->where('app_id',$app_id)
+                  ->where('role','user')
                   ->orderBy('active_status','DESC')
                   ->select('id as user_id','name','image','active_status')
-                  ->get();
+                  ->paginate(20);
     return response()->json($active_users);
 }
 public function getMessage(Request $request){
   $sender_id=$request->input('sender_id');
   $reciver_id=$request->input('reciver_id');
+  $app_id=$request->input('app_id');
    $message = DB::table('messages')
+                  ->where('app_id',$app_id)
                   ->where('sender_id',$sender_id)
                   ->where('reciver_id',$reciver_id)
                   ->orwhere('sender_id',$reciver_id)
@@ -71,6 +74,80 @@ public function getMessage(Request $request){
                   ->get();
     return response()->json($message);
 }
+public function sendMessage(Request $request){
+  $sender_id=$request->input('sender_id');
+  $reciver_id=$request->input('reciver_id');
+  $message=$request->input('message');
+  $type=$request->input('type');
+  $app_id=$request->input('app_id');
+  DB::table('messages')
+             ->insert(['sender_id' => $sender_id,
+             'sender_id' => $sender_id,
+             'reciver_id' => $reciver_id,
+             'message' => $message,
+             'type' => $type,
+             'seen' => '1',
+             'created_at' => date('Y-m-d h:i:s'),
+             'app_id' => $app_id]);
+  $device_token= DB::table('users')
+              ->where('id', $reciver_id)
+              ->select('device_token')
+              ->first();
+
+  $sender_name= DB::table('users')
+              ->where('id', $sender_id)
+              ->select('name')
+              ->first();
+    $message_body=$sender_name->name;
+   $fields = array(
+          'to' => $device_token->device_token,
+          'data' => $data = array('message' => $message_body ),
+      );
+
+      return $this->sendPushNotification($fields);
+}
+private function sendPushNotification($fields) {
+
+       //firebase server url to send the curl request
+       $url = 'https://fcm.googleapis.com/fcm/send';
+
+       //building headers for the request
+       $headers = array(
+           'Authorization: key=AAAAtrMq4LU:APA91bH4KDlSeQ_pcT7PWE4HTWKiLkaDWVlOjm_ukZ0yDUsY1YJAtCsILZRbd-Acev1-ecznOgiBzMVIcG5HN1Qg0XadFtHJziiQHQDF5i6cmPHCAxNoF4o8JXw5DwaLW-5eI-SmnBSg',
+           'Content-Type: application/json'
+       );
+
+       //Initializing curl to open a connection
+       $ch = curl_init();
+
+       //Setting the curl url
+       curl_setopt($ch, CURLOPT_URL, $url);
+
+       //setting the method as post
+       curl_setopt($ch, CURLOPT_POST, true);
+
+       //adding headers
+       curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+       //disabling ssl support
+       curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+       //adding the fields in json format
+       curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+
+       //finally executing the curl request
+       $result = curl_exec($ch);
+       if ($result === FALSE) {
+           die('Curl failed: ' . curl_error($ch));
+       }
+
+       //Now close the connection
+       curl_close($ch);
+
+       //and return the result
+       return $result;
+   }
 public function messageList(Request $request){
   $user_id=$request->input('user_id');
   $sub = Message::orderBy('created_at','asc');

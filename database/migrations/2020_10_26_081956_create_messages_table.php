@@ -17,6 +17,7 @@ class CreateMessagesTable extends Migration
             $table->bigIncrements('id');
             $table->string('sender_id');
             $table->string('reciver_id');
+            $table->string('type');
             $table->text('message');
             $table->Integer('seen');
             $table->Integer('app_id');
