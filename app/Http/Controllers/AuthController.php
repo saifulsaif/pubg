@@ -54,6 +54,15 @@ public function profile(Request $request){
                 ->first();
   return response()->json($profile_info);
 }
+public function messageList(Request $request){
+  $info=auth()->user();
+ $user_id=$request->get('user_id');
+ $profile_info = DB::table('users')
+                ->where('id',$user_id)
+                ->select('id','name','email as phone','phone as email','image','role','app_id')
+                ->first();
+  return response()->json($profile_info);
+}
 public function profileUpdate(Request $request){
  $user_id=$request->get('user_id');
  $name=$request->get('name');
@@ -64,6 +73,17 @@ public function profileUpdate(Request $request){
             ->update(['name' => $name,'email' => $email,'phone' => $phone]);
   $data['success'] = 1;
   $data['message'] = "Profile Update Successfully!";
+  return $data;
+}
+
+public function updateDeviceID(Request $request){
+ $user_id=$request->get('user_id');
+ $reg_id=$request->get('reg_id');
+ DB::table('users')
+            ->where('id', $user_id)
+            ->update(['device_token' => $reg_id]);
+  $data['success'] = 1;
+  $data['message'] = "Device Token Update Successfully!";
   return $data;
 }
 public function contact(Request $request){
@@ -79,6 +99,13 @@ public function contact(Request $request){
                   ->paginate(10);
     return response()->json($contact_info);
   }
+}
+public function senderMessage(Request $request){
+   $user_id=$request->input('user_id');
+     $sender_message = DB::table('messages')
+                  ->where('sender_id',$user_id)
+                  ->get();
+    return response()->json($user_id);
 }
 
 public function send(Request $request){

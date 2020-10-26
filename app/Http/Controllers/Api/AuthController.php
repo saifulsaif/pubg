@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use DB;
+use App\Message;
 class AuthController extends Controller
 {
   /**
@@ -50,7 +51,43 @@ public function profile(Request $request)
                   ->get();
     return response()->json($profile_info);
 }
-
+public function activeUsers(Request $request){
+   $app_id=$request->input('app_id');
+   $active_users = DB::table('users')
+                  ->where('app_id',$app_id)
+                  ->orderBy('active_status','DESC')
+                  ->select('id as user_id','name','image','active_status')
+                  ->get();
+    return response()->json($active_users);
+}
+public function getMessage(Request $request){
+  $sender_id=$request->input('sender_id');
+  $reciver_id=$request->input('reciver_id');
+   $message = DB::table('messages')
+                  ->where('sender_id',$sender_id)
+                  ->where('reciver_id',$reciver_id)
+                  ->orwhere('sender_id',$reciver_id)
+                  ->where('reciver_id',$sender_id)
+                  ->get();
+    return response()->json($message);
+}
+public function messageList(Request $request){
+  $user_id=$request->input('user_id');
+  $sub = Message::orderBy('created_at','asc');
+  $chats = DB::table(DB::raw("({$sub->toSql()}) as sub"))
+      ->where('sender_id',$user_id)
+      ->orwhere('reciver_id',$user_id)
+      ->groupBy('reciver_id')
+      ->orderBy('id','DESC')
+      ->select('reciver_id as user_id','message','seen','app_id','created_at')
+      ->get();
+      $data = array();
+      foreach ($chats as $key) {
+        $data['user_id'][] = $key->user_id;
+        $data['seen'][] = $key->seen;
+      }
+  return response()->json($data);
+}
 /**
  * Log the user out (Invalidate the token).
  *
