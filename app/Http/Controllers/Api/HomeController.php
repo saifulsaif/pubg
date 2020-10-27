@@ -14,6 +14,13 @@ class HomeController extends Controller
     $partners = DB::table('partners')->get();
     return response()->json($partners);
   }
+  public function banner(){
+    $app_id = request('app_id');
+    $banner = DB::table('partners')
+               ->where('app_id',$app_id)
+               ->get();
+    return response()->json($banner);
+  }
   public function getSliders(){
     $sliders = DB::table('sliders')->get();
     return response()->json($sliders);

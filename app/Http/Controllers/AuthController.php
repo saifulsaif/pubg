@@ -21,21 +21,20 @@ public function __construct()
  *
  * @return \Illuminate\Http\JsonResponse
  */
-public function login()
-{
-    $credentials = request(['email', 'password']);
+ public function login()
+ {  $credentials = request(['email', 'password']);
 
-    if ( $token = auth()->guard()->attempt($credentials)) {
-    $data['success'] = 1;
-    $data['message'] = "You have Signed in Successfully!";
-    $data['loginInfo'] = [array("api_token" => $token,"token_type" => 'Bearer',"user_id"=>auth()->user()->id,"type"=>auth()->user()->role)];
-    }else{
-      $data['success'] = 0;
-      $data['message'] = "Invalid Login Credentials";
-      $data['data'] = [ ];
-    }
-  return $data;
-}
+     if ( $token = auth()->guard()->attempt($credentials)) {
+     $data['success'] = 1;
+     $data['message'] = "You have Signed in Successfully!";
+     $data['loginInfo'] = [array("api_token" => $token,"token_type" => 'Bearer',"user_id"=>auth()->user()->id,"type"=>auth()->user()->role)];
+     }else{
+       $data['success'] = 0;
+       $data['message'] = "Invalid Login Credentials";
+       $data['data'] = [ ];
+     }
+   return $data;
+ }
 
 /**
  * Get the authenticated User.

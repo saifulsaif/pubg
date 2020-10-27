@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 
 Route::get('/users', 'Api\LoginController@index');
 Route::get('/getPartners', 'Api\HomeController@getPartners');
+Route::post('/banner', 'Api\HomeController@banner');
 Route::get('/getSliders', 'Api\HomeController@getSliders');
 Route::post('/registration', 'Api\HomeController@registration');
 
@@ -21,5 +22,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('active_users', 'AuthController@activeUsers');
     Route::post('get-messages', 'AuthController@getMessage');
     Route::post('send-messages', 'AuthController@sendMessage');
+    Route::post('seller_contact', 'AuthController@seller_contact');
+    Route::post('online_status', 'AuthController@online_status');
 
 });

@@ -22,16 +22,26 @@ public function __construct()
  *
  * @return \Illuminate\Http\JsonResponse
  */
-public function login()
-{
-    $credentials = request(['email', 'password']);
+ public function login()
+ {
+   $credentials = request(['email', 'password']);
+      $app_id = request('app_id');
+      $seller_id = DB::table('users')
+                     ->where('role','seller')
+                     ->where('app_id',$app_id)
+                     ->first();
+      if ( $token = auth()->guard()->attempt($credentials)) {
+      $data['success'] = 1;
+      $data['message'] = "You have Signed in Successfully!";
+      $data['loginInfo'] = [array("api_token" => $token,"token_type" => 'Bearer',"sellser_id" =>  $seller_id->id,"user_id"=>auth()->user()->id,"type"=>auth()->user()->role)];
+      }else{
+        $data['success'] = 0;
+        $data['message'] = "Invalid Login Credentials";
+        $data['data'] = [ ];
+      }
+    return $data;
+ }
 
-    if (! $token = auth()->guard()->attempt($credentials)) {
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    return $this->respondWithToken($token);
-}
 
 /**
  * Get the authenticated User.
@@ -50,6 +60,22 @@ public function profile(Request $request)
                   ->where('user_id',$user_id)
                   ->get();
     return response()->json($profile_info);
+}
+public function seller_contact(Request $request)
+{
+   $info=auth()->user();
+   $app_id=$request->input('app_id');
+   $seller_info = DB::table('profiles')
+                  ->where('app_id',$app_id)
+                  ->get();
+    return response()->json($seller_info);
+}
+public function online_status(Request $request){
+   $user_id=$request->input('user_id');
+   $status=$request->input('status');
+                  DB::table('users')
+                  ->where('id',$user_id)
+                  ->update(['active_status' => $status]);
 }
 public function activeUsers(Request $request){
    $app_id=$request->input('app_id');
