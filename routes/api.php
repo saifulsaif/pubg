@@ -20,9 +20,11 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('update_device_id', 'AuthController@updateDeviceID');
     Route::post('message_list', 'AuthController@messageList');
     Route::post('active_users', 'AuthController@activeUsers');
-    Route::post('get-messages', 'AuthController@getMessage');
-    Route::post('send-messages', 'AuthController@sendMessage');
+    Route::post('chat_list', 'AuthController@chatList');
+    Route::post('send_messages', 'AuthController@sendMessage');
     Route::post('seller_contact', 'AuthController@seller_contact');
     Route::post('online_status', 'AuthController@online_status');
+    Route::post('unseen', 'AuthController@unseen');
+    Route::post('watting_position', 'AuthController@watting_position');
 
 });

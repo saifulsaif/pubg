@@ -87,18 +87,57 @@ public function activeUsers(Request $request){
                   ->paginate(20);
     return response()->json($active_users);
 }
-public function getMessage(Request $request){
+public function chatList(Request $request){
+  $user_id=$request->input('user_id');
+   $reciver_id=$request->input('reciver_id');
+   $app_id=$request->input('app_id');
+   $chatList = DB::table('messages')
+                 ->join('users', 'users.id', '=', 'messages.reciver_id')
+                 ->select('users.name','users.image','messages.reciver_id as user_id','users.active_status', DB::raw('count(*) as total_message'))
+                 ->groupBy('messages.reciver_id')
+                 ->groupBy('users.name')
+                 ->groupBy('users.image')
+                 ->groupBy('users.active_status')
+                 ->where('messages.app_id', $app_id)
+                 ->where('messages.sender_id', $user_id)
+                 ->paginate(20);
+     return response()->json($chatList);
+}
+public function unseen(Request $request){
+  $user_id=$request->input('user_id');
   $sender_id=$request->input('sender_id');
-  $reciver_id=$request->input('reciver_id');
   $app_id=$request->input('app_id');
-   $message = DB::table('messages')
-                  ->where('app_id',$app_id)
-                  ->where('sender_id',$sender_id)
-                  ->where('reciver_id',$reciver_id)
-                  ->orwhere('sender_id',$reciver_id)
-                  ->where('reciver_id',$sender_id)
-                  ->get();
-    return response()->json($message);
+                 DB::table('messages')
+                 ->where('sender_id',$sender_id)
+                 ->where('reciver_id',$user_id)
+                 ->where('seen','1')
+                 ->where('app_id',$app_id)
+                 ->update(['seen' => '0']);
+     return response()->json('unseen successfully');
+}
+public function watting_position(Request $request){
+  $user_id=$request->input('user_id');
+  $seller_id=$request->input('seller_id');
+  $app_id=$request->input('app_id');
+                 $data=DB::table('messages')
+                 ->where('reciver_id',$seller_id)
+                 ->where('app_id',$app_id)
+                 ->where('seen','1')
+                 ->get();
+      $i=0;
+      $position=0;
+      foreach ($data as $key) {
+        if($key->sender_id==$user_id){
+          $position=$i;
+        }
+        $i++;
+            }
+    if($position==0){
+    $user_position['position'] = 1 ;
+  }else{
+    $user_position['position'] = $position ;
+  }
+    return $user_position;
 }
 public function sendMessage(Request $request){
   $sender_id=$request->input('sender_id');
@@ -106,15 +145,42 @@ public function sendMessage(Request $request){
   $message=$request->input('message');
   $type=$request->input('type');
   $app_id=$request->input('app_id');
-  DB::table('messages')
-             ->insert(['sender_id' => $sender_id,
-             'sender_id' => $sender_id,
-             'reciver_id' => $reciver_id,
-             'message' => $message,
-             'type' => $type,
-             'seen' => '1',
-             'created_at' => date('Y-m-d h:i:s'),
-             'app_id' => $app_id]);
+  $first_message = DB::table('messages')
+                 ->where('sender_id',$sender_id)
+                 ->where('reciver_id',$reciver_id)
+                 ->orwhere('reciver_id',$sender_id)
+                 ->where('sender_id',$reciver_id)
+                 ->first();
+    if($first_message){
+      DB::table('messages')
+                 ->insert(['sender_id' => $sender_id,
+                 'sender_id' => $sender_id,
+                 'reciver_id' => $reciver_id,
+                 'message' => $message,
+                 'type' => $type,
+                 'seen' => '1',
+                 'created_at' => date('Y-m-d h:i:s'),
+                 'app_id' => $app_id]);
+    }else{
+      DB::table('messages')
+                 ->insert(['sender_id' => $sender_id,
+                 'sender_id' => $sender_id,
+                 'reciver_id' => $reciver_id,
+                 'message' => $message,
+                 'type' => $type,
+                 'seen' => '1',
+                 'created_at' => date('Y-m-d h:i:s'),
+                 'app_id' => $app_id]);
+       DB::table('messages')
+                  ->insert(['sender_id' => $sender_id,
+                  'sender_id' => $reciver_id,
+                  'reciver_id' => $sender_id,
+                  'message' => '',
+                  'type' => $type,
+                  'seen' => '1',
+                  'created_at' => date('Y-m-d h:i:s'),
+                  'app_id' => $app_id]);
+       }
   $device_token= DB::table('users')
               ->where('id', $reciver_id)
               ->select('device_token')
