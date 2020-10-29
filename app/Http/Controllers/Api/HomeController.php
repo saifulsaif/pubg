@@ -35,8 +35,16 @@ class HomeController extends Controller
      $user->image=$img;
      $user->app_id=$request->input('app_id');
      $user->role='user';
+     $user->active_status='0';
      $user->password=$hashed = Hash::make($request->input('password'));
      $user->save();
-      return response()->json($data = array('message' =>'Your Registratin Successfully'));
+     $data['success'] = 1;
+     $data['message'] = "You have Registration Successfully!";
+     return $data;
   }
 }
+
+"notification":{
+      "title":"Portugal vs. Denmark",
+      "body":"great match!"
+    }

@@ -77,6 +77,41 @@ public function online_status(Request $request){
                   ->where('id',$user_id)
                   ->update(['active_status' => $status]);
 }
+public function image_upload(Request $request){
+   $user_id=$request->input('user_id');
+   $status=$request->input('file');
+   $target_dir = "images/";
+    $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
+    $response = array();
+
+    // Check if image file is an actual image or fake image
+    if (isset($_FILES["file"]))
+    {
+      if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file_name))
+      {
+        $success = true;
+        $message = "Successfully Uploaded";
+      }
+      else
+      {
+         $success = false;
+         $message = "Error while uploading";
+      }
+    }
+    else
+    {
+         $success = false;
+         $message = "Required Field Missing";
+    }
+    $response["success"] = $success;
+    $response["message"] = $message;
+     return response()->json($user_id);
+                  DB::table('users')
+                  ->where('id',$user_id)
+                  ->update(['image' => $target_file_name]);
+
+    return response()->json($response);
+}
 public function activeUsers(Request $request){
    $app_id=$request->input('app_id');
    $active_users = DB::table('users')
@@ -88,19 +123,22 @@ public function activeUsers(Request $request){
     return response()->json($active_users);
 }
 public function chatList(Request $request){
-  $user_id=$request->input('user_id');
-   $reciver_id=$request->input('reciver_id');
+   $seller_id=$request->input('seller_id');
    $app_id=$request->input('app_id');
-   $chatList = DB::table('messages')
-                 ->join('users', 'users.id', '=', 'messages.reciver_id')
-                 ->select('users.name','users.image','messages.reciver_id as user_id','users.active_status', DB::raw('count(*) as total_message'))
-                 ->groupBy('messages.reciver_id')
-                 ->groupBy('users.name')
-                 ->groupBy('users.image')
-                 ->groupBy('users.active_status')
-                 ->where('messages.app_id', $app_id)
-                 ->where('messages.sender_id', $user_id)
-                 ->paginate(20);
+   $chatList = DB::table('chat_lists')
+                 ->join('users', 'users.id', '=', 'chat_lists.user_id')
+                 ->join('messages', 'messages.id', '=', 'chat_lists.last_message')
+                 ->where('chat_lists.app_id', $app_id)
+                 ->where('chat_lists.seller_id', $seller_id)
+                 ->orderBy('chat_lists.id','DESC')
+                 ->select('chat_lists.user_id',
+                 'users.name',
+                 'users.image',
+                 'users.active_status',
+                 'messages.message as last_message',
+                 'messages.seen',
+                 'messages.created_at')
+                 ->get();
      return response()->json($chatList);
 }
 public function unseen(Request $request){
@@ -153,25 +191,114 @@ public function sendMessage(Request $request){
                  ->first();
     if($first_message){
       DB::table('messages')
-                 ->insert(['sender_id' => $sender_id,
-                 'sender_id' => $sender_id,
+                 ->insert([
+                  'sender_id' => $sender_id,
                  'reciver_id' => $reciver_id,
                  'message' => $message,
                  'type' => $type,
                  'seen' => '1',
                  'created_at' => date('Y-m-d h:i:s'),
                  'app_id' => $app_id]);
+
+       $last_message_id = DB::getPdo()->lastInsertId();
+        $check_user = DB::table('chat_lists')
+                    ->where('user_id',$reciver_id)
+                    ->first();
+        $check_role = DB::table('users')
+                    ->where('id',$reciver_id)
+                    ->first();
+        if($check_user){
+           if($check_role->role=='user'){
+             DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+             DB::table('chat_lists')
+                      ->insert(['last_message' => $last_message_id,
+                      'user_id' => $reciver_id,
+                      'seller_id' => $sender_id,
+                      'created_at' => date('Y-m-d h:i:s'),
+                      'app_id' => $app_id]);
+           }else{
+             DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+             DB::table('chat_lists')
+                        ->insert(['last_message' => $last_message_id,
+                        'user_id' => $sender_id,
+                        'seller_id' => $reciver_id,
+                        'created_at' => date('Y-m-d h:i:s'),
+                        'app_id' => $app_id]);
+           }
+        }else{
+          if($check_role->role=='user'){
+          DB::table('chat_lists')->where('user_id',$reciver_id)->delete();
+          DB::table('chat_lists')
+                     ->insert(['last_message' => $last_message_id,
+                     'user_id' => $reciver_id,
+                     'seller_id' => $sender_id,
+                     'created_at' => date('Y-m-d h:i:s'),
+                     'app_id' => $app_id]);
+          }else{
+            DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+            DB::table('chat_lists')
+                       ->insert(['last_message' => $last_message_id,
+                       'user_id' => $sender_id,
+                       'seller_id' => $reciver_id,
+                       'created_at' => date('Y-m-d h:i:s'),
+                       'app_id' => $app_id]);
+          }
+        }
+
     }else{
       DB::table('messages')
                  ->insert(['sender_id' => $sender_id,
-                 'sender_id' => $sender_id,
                  'reciver_id' => $reciver_id,
                  'message' => $message,
                  'type' => $type,
                  'seen' => '1',
                  'created_at' => date('Y-m-d h:i:s'),
                  'app_id' => $app_id]);
-       DB::table('messages')
+                 $last_message_id = DB::getPdo()->lastInsertId();
+                 $check_user = DB::table('chat_lists')
+                             ->where('user_id',$reciver_id)
+                             ->first();
+                 $check_role = DB::table('users')
+                             ->where('id',$reciver_id)
+                             ->first();
+                 if($check_role){
+                    DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+                    if($check_user->role=='user'){
+                    DB::table('chat_lists')
+                               ->insert(['last_message' => $last_message_id,
+                               'user_id' => $reciver_id,
+                               'seller_id' => $sender_id,
+                               'created_at' => date('Y-m-d h:i:s'),
+                               'app_id' => $app_id]);
+                    }else{
+                      DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+                      DB::table('chat_lists')
+                                 ->insert(['last_message' => $last_message_id,
+                                 'user_id' => $sender_id,
+                                 'seller_id' => $reciver_id,
+                                 'created_at' => date('Y-m-d h:i:s'),
+                                 'app_id' => $app_id]);
+                    }
+                 }else{
+                   if($check_role->role=='user'){
+                   DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+                   DB::table('chat_lists')
+                              ->insert(['last_message' => $last_message_id,
+                              'user_id' => $reciver_id,
+                              'seller_id' => $sender_id,
+                              'created_at' => date('Y-m-d h:i:s'),
+                              'app_id' => $app_id]);
+                   }else{
+                     DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+                     DB::table('chat_lists')
+                                ->insert(['last_message' => $last_message_id,
+                                'user_id' => $sender_id,
+                                'seller_id' => $reciver_id,
+                                'created_at' => date('Y-m-d h:i:s'),
+                                'app_id' => $app_id]);
+                   }
+                 }
+   DB::table('messages')
                   ->insert(['sender_id' => $sender_id,
                   'sender_id' => $reciver_id,
                   'reciver_id' => $sender_id,
