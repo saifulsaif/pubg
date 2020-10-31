@@ -25,7 +25,8 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('seller_contact', 'AuthController@seller_contact');
     Route::post('online_status', 'AuthController@online_status');
     Route::post('unseen', 'AuthController@unseen');
-    Route::post('watting_position', 'AuthController@watting_position');
+    Route::post('user_inbox', 'AuthController@user_inbox');
+    Route::post('waiting_time', 'AuthController@waiting_time');
     Route::post('profile_image_update', 'AuthController@image_upload');
 
 });

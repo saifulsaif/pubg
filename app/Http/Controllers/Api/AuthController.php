@@ -78,9 +78,9 @@ public function online_status(Request $request){
                   ->update(['active_status' => $status]);
 }
 public function image_upload(Request $request){
-   $user_id=$request->input('user_id');
-   $status=$request->input('file');
-   $target_dir = "images/";
+   $user_id=$request->file('user_id');
+   $status=$request->file('file');
+   $target_dir = "images/user/";
     $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
     $response = array();
 
@@ -89,26 +89,26 @@ public function image_upload(Request $request){
     {
       if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file_name))
       {
-        $success = true;
+        $success = '1';
         $message = "Successfully Uploaded";
       }
       else
       {
-         $success = false;
+         $success = '0';
          $message = "Error while uploading";
       }
     }
     else
     {
-         $success = false;
+         $success = '0';
          $message = "Required Field Missing";
     }
+    $image_link=asset($target_file_name);
     $response["success"] = $success;
     $response["message"] = $message;
-     return response()->json($user_id);
                   DB::table('users')
                   ->where('id',$user_id)
-                  ->update(['image' => $target_file_name]);
+                  ->update(['image' => $image_link]);
 
     return response()->json($response);
 }
@@ -132,13 +132,14 @@ public function chatList(Request $request){
                  ->where('chat_lists.seller_id', $seller_id)
                  ->orderBy('chat_lists.id','DESC')
                  ->select('chat_lists.user_id',
+                 'messages.sender_id',
                  'users.name',
                  'users.image',
                  'users.active_status',
                  'messages.message as last_message',
                  'messages.seen',
                  'messages.created_at')
-                 ->get();
+                 ->paginate(20);
      return response()->json($chatList);
 }
 public function unseen(Request $request){
@@ -153,7 +154,24 @@ public function unseen(Request $request){
                  ->update(['seen' => '0']);
      return response()->json('unseen successfully');
 }
-public function watting_position(Request $request){
+public function user_inbox(Request $request){
+  $user_id=$request->input('user_id');
+  $seller_id=$request->input('seller_id');
+  $app_id=$request->input('app_id');
+                 $count=DB::table('messages')
+                 ->where('reciver_id',$user_id)
+                 ->where('sender_id',$seller_id)
+                 ->where('app_id',$app_id)
+                 ->where('seen','1')
+                 ->count('id');
+    if($count<1){
+    $user_position['unseen_message'] = 0;
+  }else{
+    $user_position['unseen_message'] = $count;
+  }
+    return $user_position;
+}
+public function waiting_time(Request $request){
   $user_id=$request->input('user_id');
   $seller_id=$request->input('seller_id');
   $app_id=$request->input('app_id');
@@ -178,10 +196,32 @@ public function watting_position(Request $request){
     return $user_position;
 }
 public function sendMessage(Request $request){
+  $type=$request->input('type');
+  $message;
+  if($type=='image'){
+    $status=$request->file('file');
+    $target_dir = "images/message/";
+     $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
+     $response = array();
+
+     // Check if image file is an actual image or fake image
+     if (isset($_FILES["file"]))
+     {
+       if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file_name))
+       {
+         $message = "Successfully Uploaded";
+       }
+     }
+     else
+     {
+          $message = "Required Field Missing";
+     }
+     $message=asset($target_file_name);
+  }else{
+   $message=$request->input('message');
+  }
   $sender_id=$request->input('sender_id');
   $reciver_id=$request->input('reciver_id');
-  $message=$request->input('message');
-  $type=$request->input('type');
   $app_id=$request->input('app_id');
   $first_message = DB::table('messages')
                  ->where('sender_id',$sender_id)
