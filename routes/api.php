@@ -28,5 +28,9 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('user_inbox', 'AuthController@user_inbox');
     Route::post('waiting_time', 'AuthController@waiting_time');
     Route::post('profile_image_update', 'AuthController@image_upload');
-
+    Route::post('purchase', 'AuthController@purchase');
+    Route::post('point', 'AuthController@point');
+    Route::post('favorite', 'AuthController@favorite');
+    Route::post('note', 'AuthController@note');
+    Route::post('partials-info', 'AuthController@partialInfo');
 });

@@ -79,6 +79,9 @@ public function updateDeviceID(Request $request){
  $user_id=$request->get('user_id');
  $reg_id=$request->get('reg_id');
  DB::table('users')
+            ->where('device_token', $reg_id)
+            ->update(['device_token' =>'']);
+ DB::table('users')
             ->where('id', $user_id)
             ->update(['device_token' => $reg_id]);
   $data['success'] = 1;

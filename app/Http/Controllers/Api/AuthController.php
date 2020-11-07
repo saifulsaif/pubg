@@ -424,6 +424,74 @@ public function messageList(Request $request){
       }
   return response()->json($data);
 }
+public function updateDeviceID(Request $request){
+ $user_id=$request->get('user_id');
+ $reg_id=$request->get('reg_id');
+ DB::table('users')
+            ->where('device_token', $reg_id)
+            ->update(['device_token' =>'']);
+ DB::table('users')
+            ->where('id', $user_id)
+            ->update(['device_token' => $reg_id]);
+  $data['success'] = 1;
+  $data['message'] = "Device Token Update Successfully!";
+  return $data;
+}
+public function purchase(Request $request){
+ $user_id=$request->get('user_id');
+ $info=DB::table('partials')
+            ->where('user_id', $user_id)
+            ->first();
+ $point=$info->point+1;
+ $purchase=$info->purchase+1;
+ DB::table('partials')
+            ->where('user_id', $user_id)
+            ->update(['point' =>$point,'purchase'=>$purchase]);
+  $data['success'] = 1;
+  $data['message'] = "Purchase Update Successfully!";
+  return $data;
+}
+public function point(Request $request){
+ $user_id=$request->get('user_id');
+ $point=$request->get('point');
+ $info=DB::table('partials')
+            ->where('user_id', $user_id)
+            ->first();
+ $point=$info->point+$point;
+ DB::table('partials')
+            ->where('user_id', $user_id)
+            ->update(['point' =>$point]);
+  $data['success'] = 1;
+  $data['message'] = "Point Update Successfully!";
+  return $data;
+}
+public function note(Request $request){
+ $user_id=$request->get('user_id');
+ $note=$request->get('note');
+ DB::table('partials')
+            ->where('user_id', $user_id)
+            ->update(['note' =>$note]);
+  $data['success'] = 1;
+  $data['message'] = "Note Update Successfully!";
+  return $data;
+}
+public function favorite(Request $request){
+ $user_id=$request->get('user_id');
+ $favorite=$request->get('favorite');
+ DB::table('partials')
+            ->where('user_id', $user_id)
+            ->update(['favorite' =>$favorite]);
+  $data['success'] = 1;
+  $data['message'] = "Favorite Update Successfully!";
+  return $data;
+}
+public function partialInfo(Request $request){
+ $user_id=$request->get('user_id');
+ $info=DB::table('partials')
+            ->where('user_id', $user_id)
+            ->first();
+  return response()->json($info);
+}
 /**
  * Log the user out (Invalidate the token).
  *

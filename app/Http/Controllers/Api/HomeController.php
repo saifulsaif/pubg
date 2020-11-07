@@ -37,14 +37,15 @@ class HomeController extends Controller
      $user->role='user';
      $user->active_status='0';
      $user->password=$hashed = Hash::make($request->input('password'));
-     $user->save();
+      $user->save();
+      DB::table('partials')
+                 ->insert([
+                  'user_id' => $user->id,
+                  'purchase' => '0',
+                 'point' => '0',
+                 'favorite' => '0']);
      $data['success'] = 1;
      $data['message'] = "You have Registration Successfully!";
      return $data;
   }
 }
-
-"notification":{
-      "title":"Portugal vs. Denmark",
-      "body":"great match!"
-    }
