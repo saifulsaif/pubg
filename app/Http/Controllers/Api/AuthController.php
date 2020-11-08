@@ -492,6 +492,20 @@ public function partialInfo(Request $request){
             ->first();
   return response()->json($info);
 }
+public function referral(Request $request){
+ $user_id=$request->get('user_id');
+ $referral_id=$request->get('referral_id');
+ $info=DB::table('partials')
+            ->where('user_id', $user_id)
+            ->first();
+ $point=$info->point+5;
+ DB::table('partials')
+            ->where('user_id', $user_id)
+            ->update(['point' =>$point,'ref'=>$referral_id]);
+  $data['success'] = 1;
+  $data['message'] = "Point Update Successfully!";
+  return $data;
+}
 /**
  * Log the user out (Invalidate the token).
  *

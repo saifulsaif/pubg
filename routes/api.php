@@ -33,4 +33,5 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('favorite', 'AuthController@favorite');
     Route::post('note', 'AuthController@note');
     Route::post('partials-info', 'AuthController@partialInfo');
+    Route::post('referral', 'AuthController@referral');
 });
