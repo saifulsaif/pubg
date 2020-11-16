@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use DB;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use JWTAuth;
+use Hash;
 
 class AuthController extends Controller
 {
@@ -520,6 +521,23 @@ public function referral(Request $request){
             ->update(['point' =>$point,'ref'=>$referral_id]);
   $data['success'] = 1;
   $data['message'] = "Point Update Successfully!";
+  return $data;
+}
+public function password_change(Request $request){
+ $user_id=$request->get('user_id');
+ $old_password=Hash::make($request->get('old_password'));
+ $new_password=Hash::make($request->get('new_password'));
+ $user_data=DB::table('users')
+            ->where('id', $user_id)
+            ->where('password', $old_password)
+            ->first();
+ if($user_data){
+  $data['success'] = 1;
+  $data['message'] = "Password Change Successfully!";
+ }else{
+  $data['success'] = 0;
+  $data['message'] = "Incorrect  Password";
+ }
   return $data;
 }
 /**

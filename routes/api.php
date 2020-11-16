@@ -39,4 +39,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('waiting_list', 'Api\MessageController@waiting_list');
     Route::post('clear_waiting_list', 'Api\MessageController@clear_waiting_list');
     Route::post('start_chat', 'Api\MessageController@start_chat');
+
+
+    Route::post('password_change','AuthController@password_change');
 });
