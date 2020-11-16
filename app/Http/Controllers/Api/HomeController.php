@@ -21,6 +21,10 @@ class HomeController extends Controller
                ->get();
     return response()->json($banner);
   }
+  public function clear_waiting_list(){
+     DB::table('waiting_lists')->delete();
+    return response()->json(array('message' =>'data clear successfully!'));
+  }
   public function getSliders(){
     $sliders = DB::table('sliders')->get();
     return response()->json($sliders);
