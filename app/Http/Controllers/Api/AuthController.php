@@ -183,29 +183,27 @@ public function user_inbox(Request $request){
   }
     return $user_position;
 }
-public function waiting_time(Request $request){
+public function waiting_position(Request $request){
   $user_id=$request->input('user_id');
-  $seller_id=$request->input('seller_id');
   $app_id=$request->input('app_id');
-                 $data=DB::table('messages')
-                 ->where('reciver_id',$seller_id)
-                 ->where('app_id',$app_id)
-                 ->where('seen','1')
-                 ->get();
-      $i=0;
+  $waiting_list = DB::table('waiting_lists')
+                ->where('app_id', $app_id)
+                ->where('seller_id',null)
+                ->get();
+      $i=1;
       $position=0;
-      foreach ($data as $key) {
-        if($key->sender_id==$user_id){
+      foreach ($waiting_list as $key) {
+        if($key->user_id==$user_id){
           $position=$i;
         }
         $i++;
             }
     if($position==0){
-    $user_position['position'] = 1 ;
+    $user_position['position'] = $waiting_list ;
   }else{
     $user_position['position'] = $position ;
   }
-    return $user_position;
+    return $position;
 }
 
 public function messageList(Request $request){
@@ -313,17 +311,18 @@ public function password_change(Request $request){
  $new_password=Hash::make($request->get('new_password'));
  $user_data=DB::table('users')
             ->where('id', $user_id)
-            ->where('password', $old_password)
             ->first();
- if($user_data){
-  $data['success'] = 1;
-  $data['message'] = "Password Change Successfully!";
- }else{
-  $data['success'] = 0;
-  $data['message'] = "Incorrect  Password";
- }
- $data['message'] = $user_data;
- $data['messages'] = $old_password;
+  if(Hash::check($request->get('old_password'), $user_data->password)){
+         DB::table('users')
+                    ->where('id', $user_id)
+                    ->update(['password' => $new_password]);
+          $data['success'] = 1;
+          $data['message'] = "Password Update Successfully!";
+          return $data;
+       }else{
+         $data['success'] = 0;
+         $data['message'] = "Password Incorrect!";
+       }
   return $data;
 }
 /**

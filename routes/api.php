@@ -28,7 +28,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('online_status', 'AuthController@online_status');
     Route::post('unseen', 'AuthController@unseen');
     Route::post('user_inbox', 'AuthController@user_inbox');
-    Route::post('waiting_time', 'AuthController@waiting_time');
+    Route::post('waiting_position', 'AuthController@waiting_position');
     Route::post('profile_image_update', 'AuthController@image_upload');
     Route::post('purchase', 'AuthController@purchase');
     Route::post('point', 'AuthController@point');
@@ -39,6 +39,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('waiting_list', 'Api\MessageController@waiting_list');
     Route::post('clear_waiting_list', 'Api\MessageController@clear_waiting_list');
     Route::post('start_chat', 'Api\MessageController@start_chat');
+    Route::post('send_messages', 'Api\MessageController@SendMessage');
 
 
     Route::post('password_change','AuthController@password_change');
