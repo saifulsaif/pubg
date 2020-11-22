@@ -57,19 +57,36 @@ public function profile(Request $request)
 {
   $info=auth()->user();
  $user_id=$request->get('user_id');
- $profile_info = DB::table('users')
-                ->join('partials','partials.user_id','=','users.id')
-                ->where('users.id',$user_id)
-                ->select('users.id',
-                'users.name',
-                'users.email as phone',
-                'users.image',
-                'users.role',
-                'partials.purchase',
-                'partials.favorite',
-                'partials.ref',
-                'partials.point')
-                ->first();
+
+$profile_info = DB::table('users')
+              ->join('partials','partials.user_id','=','users.id')
+              ->where('users.id',$user_id)
+              ->select('users.id',
+              'users.name',
+              'users.email as phone',
+              'users.image',
+              'users.role',
+              'partials.purchase',
+              'partials.referral_point',
+              'partials.pending_point',
+              'partials.favorite',
+              'partials.ref as ref',
+              'partials.point')
+              ->first();
+  return response()->json($profile_info);
+}
+public function short_profile(Request $request){
+  $info=auth()->user();
+ $user_id=$request->get('user_id');
+
+$profile_info = DB::table('users')
+              ->where('id',$user_id)
+              ->select('users.id',
+              'users.name',
+              'users.email as phone',
+              'users.image',
+              'users.role')
+              ->first();
   return response()->json($profile_info);
 }
 public function seller_contact(Request $request)
@@ -238,14 +255,42 @@ public function updateDeviceID(Request $request){
 }
 public function purchase(Request $request){
  $user_id=$request->get('user_id');
+ $seller_id=$request->get('seller_id');
  $info=DB::table('partials')
             ->where('user_id', $user_id)
             ->first();
- $point=$info->point+1;
- $purchase=$info->purchase+1;
+ $referral_id=$info->ref;
+ $set_point=$info->set_point;
+ // first puchse function
+ $first_puchase=DB::table('purchase')
+            ->where('user_id', $user_id)
+            ->first();
+  if(empty($first_puchase)){
+  DB::table('partials')
+             ->where('user_id', $referral_id)
+             ->increment('point',5);
+  DB::table('partials')
+             ->where('user_id', $referral_id)
+             ->increment('referral_point',5);
+  DB::table('partials')
+             ->where('user_id', $referral_id)
+             ->decrement('pending_point',5);
+  }
+
  DB::table('partials')
             ->where('user_id', $user_id)
-            ->update(['point' =>$point,'purchase'=>$purchase]);
+            ->increment('purchase',1);
+ DB::table('partials')
+            ->where('user_id', $referral_id)
+            ->increment('point',$set_point);
+  DB::table('partials')
+             ->where('user_id', $referral_id)
+             ->increment('referral_point',$set_point );
+  DB::table('purchase')
+             ->insert(['seller_id' =>$seller_id,
+             'referral_id'=>$referral_id,
+             'Point'=>$set_point,
+             'user_id'=>$user_id]);
   $data['success'] = 1;
   $data['message'] = "Purchase Update Successfully!";
   return $data;
@@ -262,6 +307,27 @@ public function point(Request $request){
             ->update(['point' =>$point]);
   $data['success'] = 1;
   $data['message'] = "Point Update Successfully!";
+  return $data;
+}
+public function set_point(Request $request){
+ $user_id=$request->get('user_id');
+ $point=$request->get('point');
+ DB::table('partials')
+            ->where('user_id', $user_id)
+            ->update(['set_point' =>$point]);
+  $data['success'] = 1;
+  $data['message'] = " Set Point Update Successfully!";
+  return $data;
+}
+public function referral_point_list(Request $request){
+ $user_id=$request->get('user_id');
+ $info=DB::table('purchase')
+             ->join('users', 'users.id', '=', 'purchase.user_id')
+            ->where('purchase.referral_id', $user_id)
+            ->select('users.name','purchase.point','purchase.created_at')
+            ->get();
+  $data['success'] = 1;
+  $data['message'] =$info;
   return $data;
 }
 public function note(Request $request){
@@ -295,12 +361,12 @@ public function referral(Request $request){
  $user_id=$request->get('user_id');
  $referral_id=$request->get('referral_id');
  $info=DB::table('partials')
-            ->where('user_id', $user_id)
+            ->where('user_id', $referral_id)
             ->first();
- $point=$info->point+5;
+ $pending_point=$info->pending_point+5;
  DB::table('partials')
-            ->where('user_id', $user_id)
-            ->update(['point' =>$point,'ref'=>$referral_id]);
+            ->where('user_id', $referral_id)
+            ->update(['pending_point' =>$pending_point]);
   $data['success'] = 1;
   $data['message'] = "Point Update Successfully!";
   return $data;

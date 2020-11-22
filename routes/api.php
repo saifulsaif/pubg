@@ -15,6 +15,7 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('refresh', 'AuthController@refresh');
     Route::post('me', 'AuthController@me');
     Route::post('profile', 'AuthController@profile');
+    Route::post('short_profile', 'AuthController@short_profile');
     Route::post('profile_update', 'AuthController@profileUpdate');
     Route::post('contact', 'AuthController@contact');
     Route::post('send', 'AuthController@send');
@@ -40,6 +41,10 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('clear_waiting_list', 'Api\MessageController@clear_waiting_list');
     Route::post('start_chat', 'Api\MessageController@start_chat');
     Route::post('send_messages', 'Api\MessageController@SendMessage');
+
+    Route::post('product_list', 'Api\ProductController@product_list');
+    Route::post('set_point', 'AuthController@set_point');
+    Route::post('referral_point_list', 'AuthController@referral_point_list');
 
 
     Route::post('password_change','AuthController@password_change');
