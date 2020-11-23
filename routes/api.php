@@ -45,6 +45,9 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('product_list', 'Api\ProductController@product_list');
     Route::post('set_point', 'AuthController@set_point');
     Route::post('referral_point_list', 'AuthController@referral_point_list');
+    Route::post('sell', 'Api\SellController@sell');
+    Route::post('get_seller_sells', 'Api\SellController@get_seller_sells');
+    Route::post('get_user_sells', 'Api\SellController@get_user_sells');
 
 
     Route::post('password_change','AuthController@password_change');
