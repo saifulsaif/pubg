@@ -24,6 +24,7 @@ class SellController extends Controller
                    ->first();
 
       if($points->point>=$product->point){
+        $current_point=$points->point-$product->point;
         DB::table('sells')
                    ->insert([
                     'app_id' => $app_id,
@@ -31,6 +32,9 @@ class SellController extends Controller
                    'game_id' => $game_id,
                    'user_id' => $user_id,
                    'created_at' => date('Y-m-d h:i:s')]);
+       DB::table('partials')
+                  ->where('user_id', $user_id)
+                  ->update(['point' => $current_point]);
         $data['success'] = 1;
         $data['message'] = "Your request send successfully!";
       }else{
@@ -39,6 +43,36 @@ class SellController extends Controller
       }
        return $data;
   }
+  public function seller_list(Request $request){
+     $app_id=$request->input('app_id');
+      $sell = DB::table('users')
+                    ->where('app_id',$app_id)
+                    ->where('role','seller')
+                    ->select('id','name','image')
+                    ->get();
+
+      return response()->json($sell);
+   }
+  public function seller_transfer(Request $request){
+     $app_id=$request->input('app_id');
+     $seller_id=$request->input('seller_id');
+     $user_id=$request->input('user_id');
+     $waiting_list = DB::table('waiting_lists')
+                    ->where('user_id',$user_id)
+                    ->first();
+        if($waiting_list){
+          DB::table('waiting_lists')
+                     ->where('user_id', $user_id)
+                     ->update(['seller_id' => $seller_id]);
+           $data['success'] = 1;
+           $data['message'] = "Seller transfer successfully!";
+        }else{
+          $data['success'] = 0;
+          $data['message'] = "You can't transfer!";
+        }
+
+      return $data;
+   }
   public function get_seller_sells(Request $request){
      $app_id=$request->input('app_id');
      $type=$request->input('type');
@@ -48,6 +82,7 @@ class SellController extends Controller
                    ->where('sells.app_id',$app_id)
                    ->where('sells.status',$type)
                    ->select('users.id as user_id',
+                   'sells.id as sell_id',
                    'users.name',
                    'sells.game_id',
                    'sells.status',
@@ -71,6 +106,7 @@ class SellController extends Controller
                    ->select('users.id as user_id',
                    'users.name',
                    'sells.game_id',
+                   'sells.id as sell_id',
                    'sells.status',
                    'products.id as product_id',
                    'products.product_name',
@@ -80,5 +116,37 @@ class SellController extends Controller
                    ->paginate(20);
 
      return response()->json($sell);
+  }
+  public function sell_cancel(Request $request){
+    $app_id=$request->input('app_id');
+    $sell_id=$request->input('sell_id');
+       $sell_point=DB::table('sells')
+                  ->join('products','products.id','=','sells.product_id')
+                  ->where('sells.app_id',$app_id)
+                  ->where('sells.id',$sell_id)
+                  ->select('products.point','sells.user_id')
+                  ->first();
+       DB::table('sells')
+                  ->where('app_id',$app_id)
+                  ->where('id',$sell_id)
+                  ->update(['status' => 'Cancelled']);
+      DB::table('partials')
+                 ->where('user_id', $sell_point->user_id)
+                 ->Increment('point',$sell_point->point);
+       $data['message'] = "Request cancelled successfully!";
+
+      return $data;
+  }
+  public function sell_approve(Request $request){
+    $app_id=$request->input('app_id');
+    $sell_id=$request->input('sell_id');
+       DB::table('sells')
+                  ->where('app_id',$app_id)
+                  ->where('id',$sell_id)
+                  ->update(['status' => 'Approved']);
+
+       $data['message'] = "Request approved successfully!";
+
+      return $data;
   }
 }

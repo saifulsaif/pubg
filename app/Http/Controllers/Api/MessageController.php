@@ -70,7 +70,17 @@ class MessageController extends Controller{
                   'seen' => '1',
                   'created_at' => date('Y-m-d h:i:s'),
                   'app_id' => $app_id);
-    $message_null_body = array('notification_type' =>'update');
+     if($device_token){
+       $field = array(
+           'to' => $device_token->device_token,
+           'priority'=>'high',
+         //   'notification' => array('title' => $body, 'body' => $message),
+           'data' => $message_body,
+       );
+   }
+
+
+      $message_null_body = array('notification_type' =>'update');
       $all_seller = DB::table('users')
                   ->where('app_id',$app_id)
                   ->where('role','seller')
@@ -84,17 +94,9 @@ class MessageController extends Controller{
             //   'notification' => array('title' => $body, 'body' => $message),
               'data' => $message_null_body,
           );
-      return $this->sendPushNotification($fields);
+       $this->sendPushNotification($fields);
       }
-     if($device_token){
-       $fields = array(
-           'to' => $device_token->device_token,
-           'priority'=>'high',
-         //   'notification' => array('title' => $body, 'body' => $message),
-           'data' => $message_body,
-       );
-   }
-   return $this->sendPushNotification($fields);
+   return $this->sendPushNotification($field);
   }
 
 

@@ -48,7 +48,13 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('sell', 'Api\SellController@sell');
     Route::post('get_seller_sells', 'Api\SellController@get_seller_sells');
     Route::post('get_user_sells', 'Api\SellController@get_user_sells');
+    Route::post('sell_cancel', 'Api\SellController@sell_cancel');
+    Route::post('sell_approve', 'Api\SellController@sell_approve');
+    Route::post('seller_list', 'Api\SellController@seller_list');
+    Route::post('seller_transfer', 'Api\SellController@seller_transfer');
 
 
     Route::post('password_change','AuthController@password_change');
+    Route::post('check_number','AuthController@check_number');
+    Route::post('rest_password','AuthController@rest_password');
 });

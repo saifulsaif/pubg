@@ -540,6 +540,7 @@ public function password_change(Request $request){
  }
   return $data;
 }
+
 /**
  * Log the user out (Invalidate the token).
  *

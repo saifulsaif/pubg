@@ -70,10 +70,31 @@ $profile_info = DB::table('users')
               'partials.referral_point',
               'partials.pending_point',
               'partials.favorite',
-              'partials.ref as ref',
+              'partials.ref',
               'partials.point')
               ->first();
-  return response()->json($profile_info);
+$referral_name;
+$referral = DB::table('users')
+             ->where('id',$profile_info->ref)
+              ->first();
+if($referral){
+  $referral_name=$referral->name;
+}else{
+  $referral_name='';
+}
+
+$user_info[] = array('id' => $profile_info->id,
+			'name' => $profile_info->name,
+			'phone' => $profile_info->phone,
+			'image' => $profile_info->image,
+			'ref' => $referral_name,
+			'role' => $profile_info->role,
+			'purchase' => $profile_info->purchase,
+			'referral_point' => $profile_info->referral_point,
+			'pending_point' => $profile_info->pending_point,
+			'favorite' => $profile_info->favorite,
+			  'point' => $profile_info->point);
+  return response()->json($user_info);
 }
 public function short_profile(Request $request){
   $info=auth()->user();
@@ -389,6 +410,39 @@ public function password_change(Request $request){
          $data['success'] = 0;
          $data['message'] = "Password Incorrect!";
        }
+  return $data;
+}
+public function rest_password(Request $request){
+ $number=$request->get('number');
+ $password=Hash::make($request->get('password'));
+ $info=DB::table('users')
+            ->where('email', $number)
+            ->first();
+  if($info){
+         DB::table('users')
+                    ->where('email', $number)
+                    ->update(['password' => $password]);
+          $data['success'] = 1;
+          $data['message'] = "Password reset Successfully!";
+          return $data;
+       }else{
+         $data['success'] = 0;
+         $data['message'] = "Something wrong!";
+       }
+  return $data;
+}
+public function check_number(Request $request){
+ $number=$request->get('number');
+ $number=DB::table('users')
+            ->where('email', $number)
+            ->first();
+ if($number){
+  $data['success'] = 1;
+  $data['message'] = "Correct number!";
+ }else{
+  $data['success'] = 0;
+  $data['message'] = "Incorrect  number";
+ }
   return $data;
 }
 /**
