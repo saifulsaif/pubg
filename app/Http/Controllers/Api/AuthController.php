@@ -58,7 +58,7 @@ public function profile(Request $request)
   $info=auth()->user();
  $user_id=$request->get('user_id');
 
-$profile_info = DB::table('users')
+$user_info = DB::table('users')
               ->join('partials','partials.user_id','=','users.id')
               ->where('users.id',$user_id)
               ->select('users.id',
@@ -74,27 +74,32 @@ $profile_info = DB::table('users')
               'partials.point')
               ->first();
 $referral_name;
+if($user_info->ref!=0){
 $referral = DB::table('users')
-             ->where('id',$profile_info->ref)
+             ->where('id',$user_info->ref)
               ->first();
-if($referral){
-  $referral_name=$referral->name;
+      if($referral){
+        $referral_name=$referral->name;
+      }else{
+        $referral_name=0;
+      }
 }else{
-  $referral_name='';
+  $referral_name=0;
 }
 
-$user_info[] = array('id' => $profile_info->id,
-			'name' => $profile_info->name,
-			'phone' => $profile_info->phone,
-			'image' => $profile_info->image,
+
+$profile_info = array('id' => $user_info->id,
+			'name' => $user_info->name,
+			'phone' => $user_info->phone,
+			'image' => $user_info->image,
 			'ref' => $referral_name,
-			'role' => $profile_info->role,
-			'purchase' => $profile_info->purchase,
-			'referral_point' => $profile_info->referral_point,
-			'pending_point' => $profile_info->pending_point,
-			'favorite' => $profile_info->favorite,
-			  'point' => $profile_info->point);
-  return response()->json($user_info);
+			'role' => $user_info->role,
+			'purchase' => $user_info->purchase,
+			'referral_point' => $user_info->referral_point,
+			'pending_point' => $user_info->pending_point,
+			'favorite' => $user_info->favorite,
+			  'point' => $user_info->point);
+  return response()->json($profile_info);
 }
 public function short_profile(Request $request){
   $info=auth()->user();
