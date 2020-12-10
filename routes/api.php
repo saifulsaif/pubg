@@ -53,6 +53,9 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('seller_list', 'Api\SellController@seller_list');
     Route::post('seller_transfer', 'Api\SellController@seller_transfer');
 
+    Route::post('category', 'Api\ProductController@category');
+    Route::post('package_product', 'Api\ProductController@package_product');
+
 
     Route::post('password_change','AuthController@password_change');
     Route::post('check_number','AuthController@check_number');

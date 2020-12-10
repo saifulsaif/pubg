@@ -17,4 +17,18 @@ class ProductController extends Controller
                    ->paginate(20);
        return response()->json($product_list);
   }
+  public function category(Request $request){
+     $app_id=$request->input('app_id');
+     $category = DB::table('category')
+                   ->where('app_id', $app_id)
+                   ->get();
+       return response()->json($category);
+  }
+  public function package_product(Request $request){
+     $category_id=$request->input('category_id');
+     $product_list = DB::table('package_products')
+                   ->where('category_id', $category_id)
+                   ->paginate(20);
+       return response()->json($product_list);
+  }
 }
