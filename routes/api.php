@@ -23,23 +23,25 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('message_list', 'AuthController@messageList');
     Route::post('active_users', 'AuthController@activeUsers');
     Route::post('chat_list', 'AuthController@chatList');
-    Route::post('seller_send_messages', 'Api\MessageController@sellerSendMessage');
-    Route::post('user_send_messages', 'Api\MessageController@userSendMessage');
     Route::post('seller_contact', 'AuthController@seller_contact');
     Route::post('online_status', 'AuthController@online_status');
     Route::post('unseen', 'AuthController@unseen');
     Route::post('user_inbox', 'AuthController@user_inbox');
     Route::post('waiting_position', 'AuthController@waiting_position');
     Route::post('profile_image_update', 'AuthController@image_upload');
-    Route::post('purchase', 'AuthController@purchase');
+    Route::post('purchase', 'Api\PurchaseController@purchase');
+    Route::post('seller_purchase_count', 'Api\PurchaseController@seller_purchase_count');
     Route::post('point', 'AuthController@point');
     Route::post('favorite', 'AuthController@favorite');
     Route::post('note', 'AuthController@note');
     Route::post('partials-info', 'AuthController@partialInfo');
     Route::post('referral', 'AuthController@referral');
+    Route::post('seller_send_messages', 'Api\MessageController@sellerSendMessage');
+    Route::post('user_send_messages', 'Api\MessageController@userSendMessage');
     Route::post('waiting_list', 'Api\MessageController@waiting_list');
     Route::post('clear_waiting_list', 'Api\MessageController@clear_waiting_list');
     Route::post('start_chat', 'Api\MessageController@start_chat');
+    Route::post('send_messages', 'Api\MessageController@SendMessage');
     Route::post('send_messages', 'Api\MessageController@SendMessage');
 
     Route::post('product_list', 'Api\ProductController@product_list');

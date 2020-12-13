@@ -9,6 +9,26 @@ use\Hash;
 use App\User;
 
 class MessageController extends Controller{
+  public function unseen_count(Request $request){
+    $seller_id=$request->input('seller_id');
+    $app_id=$request->input('app_id');
+    $unseen = DB::table('chat_lists')
+                  ->join('users', 'users.id', '=', 'chat_lists.user_id')
+                  ->join('messages', 'messages.id', '=', 'chat_lists.last_message')
+                  ->where('chat_lists.app_id', $app_id)
+                  ->where('chat_lists.seller_id', $seller_id)
+                  ->where('messages.seen', 0)
+                  ->count('chat_lists.id');
+    $active = DB::table('chat_lists')
+                  ->join('users', 'users.id', '=', 'chat_lists.user_id')
+                  ->where('chat_lists.app_id', $app_id)
+                  ->where('chat_lists.seller_id', $seller_id)
+                  ->where('users.active_status', 1)
+                  ->count('users.id');
+      $data['active'] = $active;
+      $data['unseen'] = $unseen;
+      return $data;
+  }
   public function waiting_list(Request $request){
      $app_id=$request->input('app_id');
      $chatList = DB::table('waiting_lists')

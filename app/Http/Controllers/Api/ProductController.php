@@ -26,9 +26,16 @@ class ProductController extends Controller
   }
   public function package_product(Request $request){
      $category_id=$request->input('category_id');
-     $product_list = DB::table('package_products')
-                   ->where('category_id', $category_id)
-                   ->paginate(20);
-       return response()->json($product_list);
+     if($category_id=='0'){
+       $product_list = DB::table('package_products')
+                     ->paginate(20);
+         return response()->json($product_list);
+     }else{
+       $product_list = DB::table('package_products')
+                     ->where('category_id', $category_id)
+                     ->paginate(20);
+         return response()->json($product_list);
+     }
+
   }
 }

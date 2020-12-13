@@ -279,48 +279,7 @@ public function updateDeviceID(Request $request){
   $data['message'] = "Device Token Update Successfully!";
   return $data;
 }
-public function purchase(Request $request){
- $user_id=$request->get('user_id');
- $seller_id=$request->get('seller_id');
- $info=DB::table('partials')
-            ->where('user_id', $user_id)
-            ->first();
- $referral_id=$info->ref;
- $set_point=$info->set_point;
- // first puchse function
- $first_puchase=DB::table('purchase')
-            ->where('user_id', $user_id)
-            ->first();
-  if(empty($first_puchase)){
-  DB::table('partials')
-             ->where('user_id', $referral_id)
-             ->increment('point',5);
-  DB::table('partials')
-             ->where('user_id', $referral_id)
-             ->increment('referral_point',5);
-  DB::table('partials')
-             ->where('user_id', $referral_id)
-             ->decrement('pending_point',5);
-  }
 
- DB::table('partials')
-            ->where('user_id', $user_id)
-            ->increment('purchase',1);
- DB::table('partials')
-            ->where('user_id', $referral_id)
-            ->increment('point',$set_point);
-  DB::table('partials')
-             ->where('user_id', $referral_id)
-             ->increment('referral_point',$set_point );
-  DB::table('purchase')
-             ->insert(['seller_id' =>$seller_id,
-             'referral_id'=>$referral_id,
-             'Point'=>$set_point,
-             'user_id'=>$user_id]);
-  $data['success'] = 1;
-  $data['message'] = "Purchase Update Successfully!";
-  return $data;
-}
 public function point(Request $request){
  $user_id=$request->get('user_id');
  $point=$request->get('point');
