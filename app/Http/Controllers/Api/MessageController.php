@@ -326,44 +326,51 @@ class MessageController extends Controller{
             date_default_timezone_set('Asia/Dhaka');
             $currentTime = date( 'h', time () );
             if($currentTime>=1&&23>=$currentTime){
-              $defult_message=DB::table('defult_message')
-                                  ->where('app_id',$app_id)
-                                  ->where('type','=','offline')
-                                  ->first();
-              DB::table('messages')
-                         ->insert([
-                         'sender_id' => $reciver_id,
-                         'reciver_id' => $sender_id,
-                         'message' => $defult_message->message,
-                         'type' => 'text',
-                         'seen' => '1',
-                         'created_at' => date('Y-m-d h:i:s'),
-                         'app_id' => $app_id]);
-               $device_token= DB::table('users')
-                           ->where('id', $sender_id)
-                           ->select('device_token')
-                           ->first();
-               $sender_name= DB::table('users')
-                         ->where('id', $reciver_id)
-                         ->select('name')
-                         ->first();
-               $message_body = array('notification_type' =>'message',
-                            'sender_name' => $sender_name->name,
+              $last_message = DB::table('messages')
+                      ->where('sender_id',$sender_id)
+                      ->orderBy('id','desc')
+                      ->first();
+              $time=substr($last_message->created_at,0,-17);
+               if($time!=$currentTime){
+                 $defult_message=DB::table('defult_message')
+                                     ->where('app_id',$app_id)
+                                     ->where('type','=','offline')
+                                     ->first();
+                 DB::table('messages')
+                            ->insert([
                             'sender_id' => $reciver_id,
                             'reciver_id' => $sender_id,
                             'message' => $defult_message->message,
                             'type' => 'text',
                             'seen' => '1',
-                            'created_at' => date('Y-m-d h:i:s'),
-                            'app_id' => $app_id);
-               if($device_token){
-                 $fields = array(
-                     'to' => $device_token->device_token,
-                     'priority'=>'high',
-                   //   'notification' => array('title' => $body, 'body' => $message),
-                     'data' => $message_body,
-                 );
-                  return $this->sendPushNotification($fields);
+                            'created_at' => $datatime,
+                            'app_id' => $app_id]);
+                  $device_token= DB::table('users')
+                              ->where('id', $sender_id)
+                              ->select('device_token')
+                              ->first();
+                  $sender_name= DB::table('users')
+                            ->where('id', $reciver_id)
+                            ->select('name')
+                            ->first();
+                  $message_body = array('notification_type' =>'message',
+                               'sender_name' => $sender_name->name,
+                               'sender_id' => $reciver_id,
+                               'reciver_id' => $sender_id,
+                               'message' => $defult_message->message,
+                               'type' => 'text',
+                               'seen' => '1',
+                               'created_at' => date('Y-m-d h:i:s'),
+                               'app_id' => $app_id);
+                  if($device_token){
+                    $fields = array(
+                        'to' => $device_token->device_token,
+                        'priority'=>'high',
+                      //   'notification' => array('title' => $body, 'body' => $message),
+                        'data' => $message_body,
+                    );
+                     return $this->sendPushNotification($fields);
+                  }
                }
               }
           }

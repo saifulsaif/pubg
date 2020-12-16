@@ -304,17 +304,7 @@ public function set_point(Request $request){
   $data['message'] = " Set Point Update Successfully!";
   return $data;
 }
-public function referral_point_list(Request $request){
- $user_id=$request->get('user_id');
- $info=DB::table('purchase')
-             ->join('users', 'users.id', '=', 'purchase.user_id')
-            ->where('purchase.referral_id', $user_id)
-            ->select('users.name','purchase.point','purchase.created_at')
-            ->get();
-  $data['success'] = 1;
-  $data['message'] =$info;
-  return $data;
-}
+
 public function note(Request $request){
  $user_id=$request->get('user_id');
  $note=$request->get('note');

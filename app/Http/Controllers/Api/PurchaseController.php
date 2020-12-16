@@ -18,6 +18,29 @@ class PurchaseController extends Controller
       $data['seller_purchase_count'] = $seller_purchase_count;
       return $data;
   }
+  public function referral_point_list(Request $request){
+   $user_id=$request->get('user_id');
+   $info=DB::table('purchase')
+               ->join('users', 'users.id', '=', 'purchase.user_id')
+              ->where('purchase.referral_id', $user_id)
+              ->select('users.name','purchase.point','purchase.created_at')
+              ->get();
+    $data['success'] = 1;
+    $data['message'] =$info;
+    return $data;
+  }
+  public function referral_point_sum(Request $request){
+   $user_id=$request->get('user_id');
+  $orders = DB::table('purchase')
+               ->join('users', 'users.id', '=', 'purchase.user_id')
+               ->select('users.id','users.name','users.image', DB::raw('SUM(purchase.point) as total_point'))
+               ->where('purchase.referral_id',$user_id)
+               ->groupBy('users.id')
+               ->groupBy('users.name')
+               ->groupBy('users.image')
+               ->get();
+    return $orders;
+  }
   public function purchase(Request $request){
    $user_id=$request->get('user_id');
    $seller_id=$request->get('seller_id');

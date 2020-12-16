@@ -63,16 +63,35 @@ class SellController extends Controller
         if($waiting_list){
           DB::table('waiting_lists')
                      ->where('user_id', $user_id)
-                     ->update(['seller_id' => $seller_id]);
+                     ->update(['seller_id' =>'']);
+
+           DB::table ('transfer_users')
+                      ->insert([
+                      'seller_id' => $seller_id,
+                      'user_id' => $user_id]);
            $data['success'] = 1;
            $data['message'] = "Seller transfer successfully!";
         }else{
           $data['success'] = 0;
           $data['message'] = "You can't transfer!";
         }
-
       return $data;
    }
+   public function transfer_list(Request $request){
+    $seller_id=$request->input('seller_id');
+    $users = DB::table('transfer_users')
+                    ->join('users','users.id','transfer_users.user_id')
+                   ->where('transfer_users.seller_id',$seller_id)
+                   ->select('transfer_users.id as user_id','users.name','users.image','users.active_status')
+                   ->paginate(20);
+     return response()->json($users);
+   }
+   public function remove_transfer_user(Request $request){
+  $transfer_id=$request->input('transfer_id');
+   DB::table('transfer_users')
+                  ->where('id',$transfer_id)
+                  ->delete();
+  }
   public function get_seller_sells(Request $request){
      $app_id=$request->input('app_id');
      $type=$request->input('type');

@@ -46,7 +46,8 @@ Route::group(['prefix' => 'auth'], function () {
 
     Route::post('product_list', 'Api\ProductController@product_list');
     Route::post('set_point', 'AuthController@set_point');
-    Route::post('referral_point_list', 'AuthController@referral_point_list');
+    Route::post('referral_point_list', 'Api\PurchaseController@referral_point_list');
+    Route::post('referral_point_sum', 'Api\PurchaseController@referral_point_sum');
     Route::post('sell', 'Api\SellController@sell');
     Route::post('get_seller_sells', 'Api\SellController@get_seller_sells');
     Route::post('get_user_sells', 'Api\SellController@get_user_sells');
@@ -54,6 +55,8 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('sell_approve', 'Api\SellController@sell_approve');
     Route::post('seller_list', 'Api\SellController@seller_list');
     Route::post('seller_transfer', 'Api\SellController@seller_transfer');
+    Route::post('transfer_list', 'Api\SellController@transfer_list');
+    Route::post('remove_transfer_user', 'Api\SellController@remove_transfer_user');
 
     Route::post('category', 'Api\ProductController@category');
     Route::post('package_product', 'Api\ProductController@package_product');
