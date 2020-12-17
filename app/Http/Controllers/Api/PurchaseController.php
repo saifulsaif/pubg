@@ -18,17 +18,6 @@ class PurchaseController extends Controller
       $data['seller_purchase_count'] = $seller_purchase_count;
       return $data;
   }
-  public function referral_point_list(Request $request){
-   $user_id=$request->get('user_id');
-   $info=DB::table('purchase')
-               ->join('users', 'users.id', '=', 'purchase.user_id')
-              ->where('purchase.referral_id', $user_id)
-              ->select('users.name','purchase.point','purchase.created_at')
-              ->get();
-    $data['success'] = 1;
-    $data['message'] =$info;
-    return $data;
-  }
   public function referral_point_sum(Request $request){
    $user_id=$request->get('user_id');
   $orders = DB::table('purchase')
@@ -38,8 +27,8 @@ class PurchaseController extends Controller
                ->groupBy('users.id')
                ->groupBy('users.name')
                ->groupBy('users.image')
-               ->get();
-    return $orders;
+                ->paginate(20);
+     return response()->json($orders);
   }
   public function purchase(Request $request){
    $user_id=$request->get('user_id');
@@ -81,64 +70,74 @@ class PurchaseController extends Controller
                'user_id'=>$user_id]);
     // send messages to  user
 
-      date_default_timezone_set('Asia/Dhaka');
-      $datatime = $currentTime = date( 'h:i A d-m-Y', time () );
-      $type='text';
-      $message='Congratulations! You purchase was successful. ';
-      $sender_name= DB::table('users')
-                  ->where('id', $seller_id)
-                  ->select('name','app_id')
-                  ->first();
-      $app_id=$sender_name->app_id;
-      DB::table('messages')
-                     ->insert(['sender_id' => $seller_id,
-                     'reciver_id' => $user_id,
-                     'message' => $message,
-                     'type' => $type,
-                     'seen' => '1',
-                     'seller_id' => $seller_id,
-                     'created_at' => $datatime,
-                     'app_id' => $app_id]);
-          $last_message_id = DB::getPdo()->lastInsertId();
-          $device_token= DB::table('users')
-                      ->where('id', $user_id)
-                      ->select('device_token')
-                      ->first();
+    //   date_default_timezone_set('Asia/Dhaka');
+    //   $datatime = $currentTime = date( 'h:i A d-m-Y', time () );
+    //   $type='text';
+    //   $message='Congratulations! You purchase was successful. ';
+    //   $sender_name= DB::table('users')
+    //               ->where('id', $seller_id)
+    //               ->select('name','app_id')
+    //               ->first();
+    //   $app_id=$sender_name->app_id;
+    //   $agent = DB::table('users')
+    //           ->where('app_id',$app_id)
+    //           ->where('role','agent')
+    //           ->first();
+    //   DB::table('messages')
+    //                  ->insert(['sender_id' => $agent->id,
+    //                  'reciver_id' => $user_id,
+    //                  'message' => $message,
+    //                  'type' => $type,
+    //                  'seen' => '1',
+    //                  'seller_id' => $seller_id,
+    //                  'created_at' => $datatime,
+    //                  'app_id' => $app_id]);
+    //       $last_message_id = DB::getPdo()->lastInsertId();
+    //       $device_token= DB::table('users')
+    //                   ->where('id', $user_id)
+    //                   ->select('device_token')
+    //                   ->first();
 
 
-            $message_body = array('notification_type' =>'message',
-                         'sender_id' => $seller_id,
-                         'sender_name' => $sender_name->name,
-                         'reciver_id' => $user_id,
-                         'message' =>$message,
-                         'type' => $type,
-                         'seen' => '1',
-                         'created_at' => $datatime,
-                         'app_id' => $app_id);
-            if($device_token){
-              $field = array(
-                  'to' => $device_token->device_token,
-                  'priority'=>'high',
-                //   'notification' => array('title' => $body, 'body' => $message),
-                  'data' => $message_body,
-              );
-              $this->sendPushNotification($field);
-          }
+    //         $message_body = array('notification_type' =>'message',
+    //                      'sender_id' =>$agent->id,
+    //                      'sender_name' => $sender_name->name,
+    //                      'reciver_id' => $user_id,
+    //                      'message' =>$message,
+    //                      'type' => $type,
+    //                      'seen' => '1',
+    //                      'created_at' => $datatime,
+    //                      'app_id' => $app_id);
+    //         if($device_token){
+    //           $field = array(
+    //               'to' => $device_token->device_token,
+    //               'priority'=>'high',
+    //             //   'notification' => array('title' => $body, 'body' => $message),
+    //               'data' => $message_body,
+    //           );
+    //           $this->sendPushNotification($field);
+    //       }
 
 
 
 
     // send messages to  raferral user
     if($referral_id){
-      $user_name= DB::table('users')
+            date_default_timezone_set('Asia/Dhaka');
+      $datatime = $currentTime = date( 'h:i A d-m-Y', time () );
+         $sender_name= DB::table('users')
                   ->where('id', $user_id)
-                  ->select('name')
+                  ->select('name','app_id')
                   ->first();
-
+      $app_id=$sender_name->app_id;
+      $agent = DB::table('users')
+              ->where('app_id',$app_id)
+              ->where('role','agent')
+              ->first();
       $type='text';
-      $message='Congratulations! You got '.$set_point.' point from '.$user_name->name.'';
+      $message='Congratulations! You got '.$set_point.' point from '.$sender_name->name.'';
       DB::table('messages')
-                     ->insert(['sender_id' => $seller_id,
+                     ->insert(['sender_id' => $agent->id,
                      'reciver_id' => $referral_id,
                      'message' => $message,
                      'type' => $type,
@@ -154,7 +153,7 @@ class PurchaseController extends Controller
 
 
             $message_body = array('notification_type' =>'message',
-                         'sender_id' => $seller_id,
+                         'sender_id' => $agent->id,
                          'sender_name' => $sender_name->name,
                          'reciver_id' => $referral_id,
                          'message' =>$message,

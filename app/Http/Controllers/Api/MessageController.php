@@ -9,27 +9,31 @@ use\Hash;
 use App\User;
 
 class MessageController extends Controller{
-  public function unseen_count(Request $request){
-    $seller_id=$request->input('seller_id');
+      public function unseen_count(Request $request){
+      $seller_id=$request->input('seller_id');
     $app_id=$request->input('app_id');
-    $unseen = DB::table('chat_lists')
-                  ->join('users', 'users.id', '=', 'chat_lists.user_id')
-                  ->join('messages', 'messages.id', '=', 'chat_lists.last_message')
-                  ->where('chat_lists.app_id', $app_id)
-                  ->where('chat_lists.seller_id', $seller_id)
-                  ->where('messages.seen', 0)
-                  ->count('chat_lists.id');
-    $active = DB::table('chat_lists')
-                  ->join('users', 'users.id', '=', 'chat_lists.user_id')
-                  ->where('chat_lists.app_id', $app_id)
-                  ->where('chat_lists.seller_id', $seller_id)
-                  ->where('users.active_status', 1)
-                  ->count('users.id');
+    $agent_id = DB::table('users')
+                  ->where('role','agent')
+                  ->where('app_id',$app_id)
+                  ->first();
+    $unseen = DB::table('messages')
+                  ->where('seller_id', $seller_id)
+                  ->where('reciver_id', $agent_id->id)
+                  ->where('messages.seen',1)
+                  ->count('id');
+    $active = DB::table('users')
+                  ->where('active_status', 1)
+                  ->where('app_id',$app_id)
+                  ->count('id');
+     $transfer = DB::table('transfer_users')
+                  ->where('seller_id',$seller_id)
+                  ->count('id');
+      $data['transfer'] = $transfer;
       $data['active'] = $active;
       $data['unseen'] = $unseen;
       return $data;
-  }
-  public function waiting_list(Request $request){
+    }
+    public function waiting_list(Request $request){
      $app_id=$request->input('app_id');
      $chatList = DB::table('waiting_lists')
                    ->join('users', 'users.id', '=', 'waiting_lists.user_id')
@@ -42,7 +46,7 @@ class MessageController extends Controller{
                    ->get();
        return response()->json($chatList);
   }
-  public function start_chat(Request $request){
+    public function start_chat(Request $request){
     $app_id=$request->input('app_id');
     $sender_id=$request->input('agent_id');
     $reciver_id=$request->input('user_id');
@@ -118,15 +122,110 @@ class MessageController extends Controller{
       }
    return $this->sendPushNotification($field);
   }
+    public function userSendMessage(Request $request){
+        $type=$request->input('type');
+        $sender_id=$request->input('sender_id');
+        $reciver_id=$request->input('reciver_id');
+        $app_id=$request->input('app_id');
+        $user_type='user';
+        $message='';
+        $seller_id='';
+        $waiting_check = DB::table('waiting_lists')
+                   ->where('user_id',$sender_id)
+                   ->first();
+      if($waiting_check){
+          // send message
+          $seller_id=$waiting_check->seller_id;
+          if($type=='image'){
+            $status=$request->file('file');
+            $target_dir = "images/message/";
+             $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
+             $response = array();
 
-
-  public function SendMessage(Request $request){
-
-
+             // Check if image file is an actual image or fake image
+             if (isset($_FILES["file"]))
+             {
+               if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file_name))
+               {
+                 $message = "Successfully Uploaded";
+               }
+             }
+             else
+             {
+                  $message = "Required Field Missing";
+             }
+             $message=asset($target_file_name);
+          }else{
+            $message=$request->input('message');
+          }
+          // end image upload
+          return $this->send($sender_id,$reciver_id,$app_id,$message,$type,$user_type,$seller_id);
+      }else{
+        // send waiting_list
+        $message=$request->input('message');
+        DB::table('waiting_lists')
+                 ->insert(['user_id' => $sender_id,
+                 'created_at' => date('Y-m-d h:i:s'),
+                 'app_id' => $app_id]);
+         return $this->send($sender_id,$reciver_id,$app_id,$message,$type,$user_type,$seller_id);
+      }
+  }
+    public function sellerSendMessage(Request $request){
     $type=$request->input('type');
+    $sender_id=$request->input('sender_id');
+    $reciver_id=$request->input('reciver_id');
+    $app_id=$request->input('app_id');
+    $user_type='seller';
+    $message='';
+    $seller_id='';
+    $waiting_check = DB::table('waiting_lists')
+                   ->where('user_id',$reciver_id)
+                   ->first();
+      if($waiting_check){
+          // send message
+          $seller_id=$waiting_check->seller_id;
+          if($type=='image'){
+            $status=$request->file('file');
+            $target_dir = "images/message/";
+             $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
+             $response = array();
+
+             // Check if image file is an actual image or fake image
+             if (isset($_FILES["file"]))
+             {
+               if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file_name))
+               {
+                 $message = "Successfully Uploaded";
+               }
+             }
+             else
+             {
+                  $message = "Required Field Missing";
+             }
+             $message=asset($target_file_name);
+          }else{
+            $message=$request->input('message');
+          }
+          // end image upload
+          return $this->send($sender_id,$reciver_id,$app_id,$message,$type,$user_type,$seller_id);
+      }else{
+        // send waiting_list
+        $message=$request->input('message');
+        DB::table('waiting_lists')
+                 ->insert(['user_id' => $reciver_id,
+                 'created_at' => date('Y-m-d h:i:s'),
+                 'app_id' => $app_id]);
+         return $this->send($sender_id,$reciver_id,$app_id,$message,$type,$user_type,$seller_id);
+      }
+  }
+  public function sendMessage(Request $request){
+      date_default_timezone_set('Asia/Dhaka');
+      $datatime = $currentTime = date( 'h:i A d-m-Y', time () );
+    $type;
     $user_type=$request->input('user_type');
     $message;
-    if($type=='image'){
+    if($request->input('type')=='image'){
+      $type='image';
       $status=$request->file('file');
       $target_dir = "images/message/";
        $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
@@ -145,7 +244,11 @@ class MessageController extends Controller{
             $message = "Required Field Missing";
        }
        $message=asset($target_file_name);
+    }elseif($request->input('type')=='banner'){
+     $type='image';
+     $message=$request->input('message');
     }else{
+     $type=$request->input('type');
      $message=$request->input('message');
     }
 
@@ -156,8 +259,7 @@ class MessageController extends Controller{
 
     // user type check
      if($user_type=='user'){
-       // user message...........
-
+       // seller message...........
        $seller_id=$this->check_waitinglist($sender_id,$app_id);
        DB::table('messages')
                   ->insert([
@@ -167,22 +269,40 @@ class MessageController extends Controller{
                   'message' => $message,
                   'type' => $type,
                   'seen' => '1',
-                  'created_at' => date('Y-m-d h:i:s'),
+                  'created_at' => $datatime,
                   'app_id' => $app_id]);
 
         $last_message_id = DB::getPdo()->lastInsertId();
-      if(!empty($seller_id)){
+         if(!empty($seller_id)){
          DB::table('chat_lists')
          ->where('user_id', $sender_id)
          ->where('seller_id', $seller_id)
+         ->where('app_id', $app_id)
          ->delete();
          DB::table('chat_lists')
                     ->insert(['last_message' => $last_message_id,
                     'user_id' => $sender_id,
                     'seller_id' => $seller_id,
-                    'created_at' => date('Y-m-d h:i:s'),
+                    'created_at' => $datatime,
                     'app_id' => $app_id]);
-        }
+        }else{
+              $message_null_body = array('notification_type' =>'update');
+      $all_seller = DB::table('users')
+                  ->where('app_id',$app_id)
+                  ->where('role','seller')
+                  ->where('device_token','!=','')
+                  ->select('device_token')
+                  ->get();
+      foreach ($all_seller as $key) {
+          $fields = array(
+              'to' => $key->device_token,
+              'priority'=>'high',
+            //   'notification' => array('title' => $body, 'body' => $message),
+              'data' => $message_null_body,
+          );
+       $this->sendPushNotification($fields);
+      }
+    }
         $device_token= DB::table('users')
                     ->where('id', $seller_id)
                     ->select('device_token')
@@ -198,10 +318,12 @@ class MessageController extends Controller{
                      'message' =>$message,
                      'type' => $type,
                      'seen' => '1',
-                     'created_at' => date('Y-m-d h:i:s'),
+                     'created_at' => $datatime,
                      'app_id' => $app_id);
+
+        $this->check_message($sender_id,$reciver_id,$app_id);
         if($device_token){
-          $fields = array(
+            $fields = array(
               'to' => $device_token->device_token,
               'priority'=>'high',
             //   'notification' => array('title' => $body, 'body' => $message),
@@ -209,7 +331,6 @@ class MessageController extends Controller{
           );
            return $this->sendPushNotification($fields);
         }
-       $this->check_message($sender_id,$reciver_id,$app_id);
      }else{
        // agent message..............
        $agent = DB::table('users')
@@ -224,16 +345,20 @@ class MessageController extends Controller{
                   'message' => $message,
                   'type' => $type,
                   'seen' => '1',
-                  'created_at' => date('Y-m-d h:i:s'),
+                  'created_at' => $datatime,
                   'app_id' => $app_id]);
 
         $last_message_id = DB::getPdo()->lastInsertId();
-       DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+       DB::table('chat_lists')
+                    ->where('user_id', $reciver_id)
+                    ->where('seller_id', $sender_id)
+                    ->where('app_id', $app_id)
+                    ->delete();
        DB::table('chat_lists')
                   ->insert(['last_message' => $last_message_id,
                   'user_id' => $reciver_id,
                   'seller_id' => $sender_id,
-                  'created_at' => date('Y-m-d h:i:s'),
+                  'created_at' => $datatime,
                   'app_id' => $app_id]);
         $device_token= DB::table('users')
                     ->where('id', $reciver_id)
@@ -247,9 +372,10 @@ class MessageController extends Controller{
                      'message' =>$message,
                      'type' => $type,
                      'seen' => '1',
-                     'created_at' => date('Y-m-d h:i:s'),
+                     'created_at' => $datatime,
                      'app_id' => $app_id);
-        if($device_token){$fields = array(
+        if($device_token){
+            $fields = array(
               'to' => $device_token->device_token,
               'priority'=>'high',
             //   'notification' => array('title' => $body, 'body' => $message),
@@ -258,10 +384,203 @@ class MessageController extends Controller{
            return $this->sendPushNotification($fields);
         }
      }
+
+
+
 // notification start
   }
 
-       private function check_waitinglist($sender_id,$app_id) {
+
+
+
+
+
+
+
+
+
+//  public function sendMessage(Request $request){
+//   $type=$request->input('type');
+//   $message;
+//   if($type=='image'){
+//     $status=$request->file('file');
+//     $target_dir = "images/message/";
+//      $target_file_name = $target_dir .basename($_FILES["file"]["name"]);
+//      $response = array();
+
+//      // Check if image file is an actual image or fake image
+//      if (isset($_FILES["file"]))
+//      {
+//       if (move_uploaded_file($_FILES["file"]["tmp_name"], $target_file_name))
+//       {
+//          $message = "Successfully Uploaded";
+//       }
+//      }
+//      else
+//      {
+//           $message = "Required Field Missing";
+//      }
+//      $message=asset($target_file_name);
+//   }else{
+//   $message=$request->input('message');
+//   }
+//   $sender_id=$request->input('sender_id');
+//   $reciver_id=$request->input('reciver_id');
+//   $app_id=$request->input('app_id');
+//   $first_message = DB::table('messages')
+//                  ->where('sender_id',$sender_id)
+//                  ->where('reciver_id',$reciver_id)
+//                  ->orwhere('reciver_id',$sender_id)
+//                  ->where('sender_id',$reciver_id)
+//                  ->first();
+//     if($first_message){
+//       DB::table('messages')
+//                  ->insert([
+//                   'sender_id' => $sender_id,
+//                  'reciver_id' => $reciver_id,
+//                  'message' => $message,
+//                  'type' => $type,
+//                  'seen' => '1',
+//                  'created_at' => date('Y-m-d h:i:s'),
+//                  'app_id' => $app_id]);
+
+//       $last_message_id = DB::getPdo()->lastInsertId();
+//         $check_user = DB::table('chat_lists')
+//                     ->where('user_id',$reciver_id)
+//                     ->first();
+//         $check_role = DB::table('users')
+//                     ->where('id',$reciver_id)
+//                     ->first();
+//         if($check_user){
+//           if($check_role->role=='user'){
+//              DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+//              DB::table('chat_lists')
+//                       ->insert(['last_message' => $last_message_id,
+//                       'user_id' => $reciver_id,
+//                       'seller_id' => $sender_id,
+//                       'created_at' => date('Y-m-d h:i:s'),
+//                       'app_id' => $app_id]);
+//           }else{
+//              DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+//              DB::table('chat_lists')
+//                         ->insert(['last_message' => $last_message_id,
+//                         'user_id' => $sender_id,
+//                         'seller_id' => $reciver_id,
+//                         'created_at' => date('Y-m-d h:i:s'),
+//                         'app_id' => $app_id]);
+//           }
+//         }else{
+//           if($check_role->role=='user'){
+//           DB::table('chat_lists')->where('user_id',$reciver_id)->delete();
+//           DB::table('chat_lists')
+//                      ->insert(['last_message' => $last_message_id,
+//                      'user_id' => $reciver_id,
+//                      'seller_id' => $sender_id,
+//                      'created_at' => date('Y-m-d h:i:s'),
+//                      'app_id' => $app_id]);
+//           }else{
+//             DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+//             DB::table('chat_lists')
+//                       ->insert(['last_message' => $last_message_id,
+//                       'user_id' => $sender_id,
+//                       'seller_id' => $reciver_id,
+//                       'created_at' => date('Y-m-d h:i:s'),
+//                       'app_id' => $app_id]);
+//           }
+//         }
+
+//     }else{
+//       DB::table('messages')
+//                  ->insert(['sender_id' => $sender_id,
+//                  'reciver_id' => $reciver_id,
+//                  'message' => $message,
+//                  'type' => $type,
+//                  'seen' => '1',
+//                  'created_at' => date('Y-m-d h:i:s'),
+//                  'app_id' => $app_id]);
+//                  $last_message_id = DB::getPdo()->lastInsertId();
+//                  $check_user = DB::table('chat_lists')
+//                              ->where('user_id',$reciver_id)
+//                              ->first();
+//                  $check_role = DB::table('users')
+//                              ->where('id',$reciver_id)
+//                              ->first();
+//                  if($check_role){
+//                     DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+//                     if($check_user->role=='user'){
+//                     DB::table('chat_lists')
+//                               ->insert(['last_message' => $last_message_id,
+//                               'user_id' => $reciver_id,
+//                               'seller_id' => $sender_id,
+//                               'created_at' => date('Y-m-d h:i:s'),
+//                               'app_id' => $app_id]);
+//                     }else{
+//                       DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+//                       DB::table('chat_lists')
+//                                  ->insert(['last_message' => $last_message_id,
+//                                  'user_id' => $sender_id,
+//                                  'seller_id' => $reciver_id,
+//                                  'created_at' => date('Y-m-d h:i:s'),
+//                                  'app_id' => $app_id]);
+//                     }
+//                  }else{
+//                   if($check_role->role=='user'){
+//                   DB::table('chat_lists')->where('user_id', $reciver_id)->delete();
+//                   DB::table('chat_lists')
+//                               ->insert(['last_message' => $last_message_id,
+//                               'user_id' => $reciver_id,
+//                               'seller_id' => $sender_id,
+//                               'created_at' => date('Y-m-d h:i:s'),
+//                               'app_id' => $app_id]);
+//                   }else{
+//                      DB::table('chat_lists')->where('user_id', $sender_id)->delete();
+//                      DB::table('chat_lists')
+//                                 ->insert(['last_message' => $last_message_id,
+//                                 'user_id' => $sender_id,
+//                                 'seller_id' => $reciver_id,
+//                                 'created_at' => date('Y-m-d h:i:s'),
+//                                 'app_id' => $app_id]);
+//                   }
+//                  }
+//   DB::table('messages')
+//                   ->insert(['sender_id' => $sender_id,
+//                   'sender_id' => $reciver_id,
+//                   'reciver_id' => $sender_id,
+//                   'message' => '',
+//                   'type' => $type,
+//                   'seen' => '1',
+//                   'created_at' => date('Y-m-d h:i:s'),
+//                   'app_id' => $app_id]);
+//       }
+//   $device_token= DB::table('users')
+//               ->where('id', $reciver_id)
+//               ->select('device_token')
+//               ->first();
+
+//   $sender_name= DB::table('users')
+//               ->where('id', $sender_id)
+//               ->select('name')
+//               ->first();
+//     $message_body = array('sender_id' => $sender_id,
+//                   'sender_name' => $sender_name->name,
+//                   'reciver_id' => $reciver_id,
+//                   'message' =>$message,
+//                   'type' => $type,
+//                   'seen' => '1',
+//                   'created_at' => date('Y-m-d h:i:s'),
+//                   'app_id' => $app_id);
+//     $body=$sender_name->name;
+//   $fields = array(
+//           'to' => $device_token->device_token,
+//           'priority'=>'high',
+//         //   'notification' => array('title' => $body, 'body' => $message),
+//           'data' => $message_body,
+//       );
+
+//       return $this->sendPushNotification($fields);
+// }
+
+    private function check_waitinglist($sender_id,$app_id) {
          $waiting_check = DB::table('waiting_lists')
                  ->where('user_id',$sender_id)
                  ->first();
@@ -277,7 +596,7 @@ class MessageController extends Controller{
             }
           return $seller_id;
        }
-       private function check_message($sender_id,$reciver_id,$app_id){
+        private function check_message($sender_id,$reciver_id,$app_id){
          $message_count = DB::table('messages')
                  ->where('sender_id',$sender_id)
                  ->count('id');
@@ -324,9 +643,9 @@ class MessageController extends Controller{
              }
           }else{
             date_default_timezone_set('Asia/Dhaka');
-            $currentTime = date( 'h', time () );
-            if($currentTime>=1&&23>=$currentTime){
-              $last_message = DB::table('messages')
+            $datatime = $currentTime = date( 'G', time () );
+             if($datatime>=1&& $datatime<=9){
+               $last_message = DB::table('messages')
                       ->where('sender_id',$sender_id)
                       ->orderBy('id','desc')
                       ->first();
@@ -343,7 +662,7 @@ class MessageController extends Controller{
                             'message' => $defult_message->message,
                             'type' => 'text',
                             'seen' => '1',
-                            'created_at' => $datatime,
+                            'created_at' => date('Y-m-d h:i:s'),
                             'app_id' => $app_id]);
                   $device_token= DB::table('users')
                               ->where('id', $sender_id)
